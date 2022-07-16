@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    Camera Form
+    <form  method="POST">
+        {% csrf_token %}
+        <br />
+        <input type="text" name="number" placeholder="number" required>
+        <br />
+        <input type="text" name="latitude" placeholder="latitude" required>
+        <br />
+        <input type="text" name="longitude" placeholder="longitude" required>
+        <br />
+        <input type="text" name="gate_number" placeholder="gate_number" required>
+        <br />
+        <input type="submit" value="Submit"> 
+    </form>
+</body>
+</html>
