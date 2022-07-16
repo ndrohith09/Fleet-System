@@ -105,7 +105,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 #Azure Maps Subscription key
-AZURE_SUBSCRIPTION_KEY = 'lH4klHHUVJo_XM-yQOeyiBYHtIchIcynlS5oFPa8ewA'
+AZURE_SUBSCRIPTION_KEY = 'QGOLniSq78wH24x1pXI6ThDJlPoF2aU7wJbffO2jTM4'
+#                        'lH4klHHUVJo_XM-yQOeyiBYHtIchIcynlS5oFPa8ewA'
 
 
 # Internationalization
