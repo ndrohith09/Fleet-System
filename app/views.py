@@ -511,10 +511,15 @@ class FleetLiveActivity(APIView):
     def get(self, request):
         """
             Retrieve all the vehicles entering and exiting from the unit based on particular day
+            query_params:
+                date: date of the vehicle #yyyy-mm-dd
         """
 
-        json_data = []
-        now_date = str(date.today())
+        activity_date = request.query_params.get('date',None)
+        if activity_date in [None,'']:
+            now_date = str(date.today())
+        else:
+            now_date = str(activity_date)
 
         '''
             Return the objects only whose len(logs) != 0
@@ -523,7 +528,7 @@ class FleetLiveActivity(APIView):
         serializers = FleetSerializer(fleets,many=True,context={'request': request}).data
 
         temp = []
-        raw_lst = []
+        json_data = []
         """
             save the data in a temporary list
             save the fleet number,entry time,exit time,camera number
@@ -545,7 +550,7 @@ class FleetLiveActivity(APIView):
         for log in temp:
             #for i in range(len(log['entry'])):
             for i in range(len(log['entry'])):
-                raw_lst.append({
+                json_data.append({
                     "asset_id"  : log['asset_id'],
                     'number_plate': log['number_plate'],
                     "in_unit": log['in_unit'],
@@ -558,7 +563,7 @@ class FleetLiveActivity(APIView):
                 })
 
             for i in range(len(log['exit'])):
-                raw_lst.append({
+                json_data.append({
                     "asset_id"  : log['asset_id'],
                     'number_plate': log['number_plate'],
                     "in_unit": log['in_unit'],
@@ -570,8 +575,8 @@ class FleetLiveActivity(APIView):
                     "entry" : False
                 })
 
-        raw_lst.sort(key=lambda x: x['time'])
+        json_data.sort(key=lambda x: x['time'])
 
-        return Response({'msg': 'Vehicle details', 'data': raw_lst}, status=status.HTTP_200_OK)
+        return Response({'msg': 'Vehicle details', 'data': json_data}, status=status.HTTP_200_OK)
 
 
