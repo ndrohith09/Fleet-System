@@ -54,7 +54,7 @@ class FleetModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.id + self.asset_id
+        return f"{self.id} - {self.number_plate}"
 
 
 ''' camera Model '''
@@ -71,4 +71,4 @@ class Camera(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.id + self.number
+        return f"{self.gate_number}_{self.entry} - {self.number}"

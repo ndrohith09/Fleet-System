@@ -1,6 +1,3 @@
-from django.shortcuts import render
-from html5lib import serialize
-from itsdangerous import json
 from app.models import *
 from app.serializers import *
 from datetime import datetime
@@ -365,13 +362,13 @@ class FleetEntryExit(APIView):
         get_vh = FleetModel.objects.filter(number_plate=vh_plate).first()
         if get_vh is None:
             return Response({'msg': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializers = FleetSerializer(get_vh, context={'request': request})
+        serializers = FleetSerializer(get_vh, context={'request': request}).data
 
         """-------------------Checking the camera number exists or not-------------------"""
         get_camera = Camera.objects.filter(number=camera_number).first()
         if get_camera is None:
             return Response({'msg': 'Camera not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializers_camera = CameraSerializer(get_camera, context={'request': request})
+        serializers_camera = CameraSerializer(get_camera, context={'request': request}).data
 
         """-------------------
             Checking the vehicle authorization here.
@@ -382,7 +379,7 @@ class FleetEntryExit(APIView):
             --------------------
         """
         check_access = check_fleet_authorization(get_vh.id)
-        if check_access['status'] == False:
+        if check_access['access'] == False:
             if serializers_camera['entry'] == True:
                 return Response({'msg': 'Unauthorized vehicle is entering into unit','msg':check_access['msg']}, status=status.HTTP_404_NOT_FOUND)
             else:
@@ -434,6 +431,7 @@ class FleetEntryExit(APIView):
         """
         #Azure location Maps
         geo_data = decodelocation(serializers_camera['latitude'],serializers_camera['longitude'])
+        
         zipcode = geo_data['addresses'][0]['address']['postalCode']
         zipcode = zipcode.replace(" ","")
         freeformaddress = geo_data['addresses'][0]['address']['freeformAddress']
@@ -469,7 +467,7 @@ class FleetEntryExit(APIView):
         get_vh.logs = serializers['logs']
         get_vh.save()
 
-        return Response({'msg': 'Vehicle entry successful', 'number_plate': vh_plate}, status=status.HTTP_200_OK)
+        return Response({'msg': 'Vehicle entry successful', 'number_plate': vh_plate,'data' : serializers}, status=status.HTTP_200_OK)
            
 
 class FleetDetails(APIView):
@@ -482,18 +480,25 @@ class FleetDetails(APIView):
             It will return the details of the vehicle.
             If the vehicle is not found, then it will return the error message.
             query_params:
-                query: number_plate of the vehicle
+                query: query search of the vehicle
+                number_plate: number_plate of the vehicle
         """
         query = request.query_params.get('query',None)
         number_plate = request.query_params.get('number_plate',None)
-        if number_plate is not None:
+        if number_plate not in [None,'']:
             get_vh = FleetModel.objects.filter(Q(number_plate=number_plate)).first()
-        else:
+        elif query not in [None, '']:
             get_vh = FleetModel.objects.filter(Q(number_plate__contains=query) | Q(asset_id__contains = query))
+        else:
+            get_vh = FleetModel.objects.all()
         
+        if number_plate not in [None,'']:
+            serializers = FleetSerializer(get_vh,context={'request': request})
+        else:
+            serializers = FleetSerializer(get_vh,many=True,context={'request': request})
+
         if get_vh is None:
             return Response({'msg': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
-        serializers = FleetSerializer(get_vh,many=True,context={'request': request})
 
         json_data = serializers.data
         return Response({'msg': 'Vehicle details', 'data': json_data}, status=status.HTTP_200_OK)
