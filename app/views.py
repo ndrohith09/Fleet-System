@@ -1,4 +1,6 @@
 from django.shortcuts import render
+from html5lib import serialize
+from itsdangerous import json
 from app.models import *
 from app.serializers import *
 from datetime import datetime
@@ -470,3 +472,28 @@ class FleetEntryExit(APIView):
         return Response({'msg': 'Vehicle entry successful', 'number_plate': vh_plate}, status=status.HTTP_200_OK)
            
 
+class FleetDetails(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        """
+            This view is used to get the details of the vehicle.
+            It will return the details of the vehicle.
+            If the vehicle is not found, then it will return the error message.
+            query_params:
+                query: number_plate of the vehicle
+        """
+        query = request.query_params.get('query',None)
+        number_plate = request.query_params.get('number_plate',None)
+        if number_plate is not None:
+            get_vh = FleetModel.objects.filter(Q(number_plate=number_plate)).first()
+        else:
+            get_vh = FleetModel.objects.filter(Q(number_plate__contains=query) | Q(asset_id__contains = query))
+        
+        if get_vh is None:
+            return Response({'msg': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
+        serializers = FleetSerializer(get_vh,many=True,context={'request': request})
+
+        json_data = serializers.data
+        return Response({'msg': 'Vehicle details', 'data': json_data}, status=status.HTTP_200_OK)
