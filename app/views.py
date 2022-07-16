@@ -9,6 +9,12 @@ from datetime import date, datetime as dtt, time
 from django.conf import settings
 import requests
 from django.db.models.functions import Length
+import cv2
+from matplotlib import pyplot as plt
+import numpy as np
+import imutils 
+import easyocr
+
 
 """---------Date Time Format---------"""
 dmY = "%d-%m-%Y"
@@ -20,10 +26,40 @@ HMS = "%H:%M:%S"
 dBY = "%d %B,%Y"
 #dtt.strptime(date.today(), '%Y-%m-%d').strftime(dmY)
 
+def number_plate_model(input_img):
+    img = cv2.imread(input_img)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-def number_plate_model(img):
-    number_plate = 'TN10AV0001'
-    return number_plate
+    bfilter = cv2.bilateralFilter(gray, 11, 17, 17) #Noise reduction
+    edged = cv2.Canny(bfilter, 30, 200) #Edge detection
+
+    keypoints = cv2.findContours(edged.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    contours = imutils.grab_contours(keypoints)
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:10]
+
+    location = None
+    for contour in contours:
+        approx = cv2.approxPolyDP(contour, 10, True)
+        if len(approx) == 4:
+            location = approx
+            break
+
+    mask = np.zeros(gray.shape, np.uint8)
+    new_image = cv2.drawContours(mask, [location], 0,255, -1)
+    new_image = cv2.bitwise_and(img, img, mask=mask)
+
+    (x,y) = np.where(mask==255)
+    (x1, y1) = (np.min(x), np.min(y))
+    (x2, y2) = (np.max(x), np.max(y))
+    cropped_image = gray[x1:x2+1, y1:y2+1]
+    reader = easyocr.Reader(['en'])
+
+    result = reader.readtext(cropped_image)
+    return result[0][1]
+
+# def number_plate_model(img):
+#     number_plate = 'TN10AV0001'
+#     return number_plate
 
 def decodelocation(lat,lon):
     """
@@ -347,6 +383,10 @@ class FleetEntryExit(APIView):
         camera_number = request.data.get('camera_number', None)
         img = request.data.get('img', None)
 
+        print(camera_number)
+        print(img)
+        print("351")
+
         val_arr = [None, '']
 
         if img in val_arr:
@@ -356,13 +396,17 @@ class FleetEntryExit(APIView):
             return Response({'msg': 'Please provide camera number'}, status=status.HTTP_404_NOT_FOUND)
 
         '''Processing the image here'''
-        vh_plate = number_plate_model("test")
+        # img = 'app/car.jpeg' # authorized
+        img = 'app/car1.jpeg'  # unauthorized
+        vh_plate = number_plate_model(img)
+        print("==========================")
+        print(vh_plate)
         if vh_plate in val_arr:
             return Response({'msg': 'Model didnt process the image properly'}, status=status.HTTP_404_NOT_FOUND)
 
         get_vh = FleetModel.objects.filter(number_plate=vh_plate).first()
         if get_vh is None:
-            return Response({'msg': 'Vehicle not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response({'msg': 'Vehicle is Unauthorized'}, status=status.HTTP_404_NOT_FOUND)
         serializers = FleetSerializer(get_vh, context={'request': request}).data
 
         """-------------------Checking the camera number exists or not-------------------"""
@@ -538,7 +582,9 @@ class FleetLiveActivity(APIView):
                 if j['date'] == now_date:
                     temp.append({
                         "asset_id"  : i['asset_id'],
+                        "asset_name"  : i['asset_name'],
                         'number_plate': i['number_plate'],
+                        'driver_name': i['driver_name'],
                         "in_unit": j['in_unit'],
                         "entry": j['entry'],
                         "exit": j['exit'],
@@ -552,8 +598,10 @@ class FleetLiveActivity(APIView):
             for i in range(len(log['entry'])):
                 json_data.append({
                     "asset_id"  : log['asset_id'],
+                    "asset_name"  : log['asset_name'],
                     'number_plate': log['number_plate'],
                     "in_unit": log['in_unit'],
+                    'driver_name': log['driver_name'],
                     "time": log['entry'][i]['time'],
                     "entry_gate": log['entry'][i]['gate'],
                     "entry_camera": log['entry'][i]['camera'],
@@ -566,7 +614,9 @@ class FleetLiveActivity(APIView):
                 json_data.append({
                     "asset_id"  : log['asset_id'],
                     'number_plate': log['number_plate'],
+                    "asset_name"  : log['asset_name'],
                     "in_unit": log['in_unit'],
+                    'driver_name': log['driver_name'],
                     "time": log['exit'][i]['time'],
                     "exit_gate": log['exit'][i]['gate'],
                     "exit_camera": log['exit'][i]['camera'],
