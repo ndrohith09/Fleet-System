@@ -8,6 +8,7 @@ from django.db.models import Q
 from datetime import date, datetime as dtt, time
 from django.conf import settings
 import requests
+from django.db.models.functions import Length
 
 """---------Date Time Format---------"""
 dmY = "%d-%m-%Y"
@@ -502,3 +503,75 @@ class FleetDetails(APIView):
 
         json_data = serializers.data
         return Response({'msg': 'Vehicle details', 'data': json_data}, status=status.HTTP_200_OK)
+
+class FleetLiveActivity(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        """
+            Retrieve all the vehicles entering and exiting from the unit based on particular day
+        """
+
+        json_data = []
+        now_date = str(date.today())
+
+        '''
+            Return the objects only whose len(logs) != 0
+        '''
+        fleets = FleetModel.objects.filter(~Q(logs=[]))
+        serializers = FleetSerializer(fleets,many=True,context={'request': request}).data
+
+        temp = []
+        raw_lst = []
+        """
+            save the data in a temporary list
+            save the fleet number,entry time,exit time,camera number
+        """
+        for i in serializers:
+            for j in i['logs']:
+                if j['date'] == now_date:
+                    temp.append({
+                        "asset_id"  : i['asset_id'],
+                        'number_plate': i['number_plate'],
+                        "in_unit": j['in_unit'],
+                        "entry": j['entry'],
+                        "exit": j['exit'],
+                    })
+            
+        """
+            Sort the data based on the fleet number
+        """
+        for log in temp:
+            #for i in range(len(log['entry'])):
+            for i in range(len(log['entry'])):
+                raw_lst.append({
+                    "asset_id"  : log['asset_id'],
+                    'number_plate': log['number_plate'],
+                    "in_unit": log['in_unit'],
+                    "time": log['entry'][i]['time'],
+                    "entry_gate": log['entry'][i]['gate'],
+                    "entry_camera": log['entry'][i]['camera'],
+                    "entry_latitude": log['entry'][i]['latitude'],
+                    "entry_longitude": log['entry'][i]['longitude'],
+                    "entry" : True
+                })
+
+            for i in range(len(log['exit'])):
+                raw_lst.append({
+                    "asset_id"  : log['asset_id'],
+                    'number_plate': log['number_plate'],
+                    "in_unit": log['in_unit'],
+                    "time": log['exit'][i]['time'],
+                    "exit_gate": log['exit'][i]['gate'],
+                    "exit_camera": log['exit'][i]['camera'],
+                    "exit_latitude": log['exit'][i]['latitude'],
+                    "exit_longitude": log['exit'][i]['longitude'],
+                    "entry" : False
+                })
+
+        raw_lst.sort(key=lambda x: x['time'])
+
+        return Response({'msg': 'Vehicle details', 'data': raw_lst}, status=status.HTTP_200_OK)
+
+
