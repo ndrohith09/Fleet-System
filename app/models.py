@@ -3,43 +3,72 @@ from django.db import models
 # Create your models here.
 
 ''' vehicle Model '''
+
+
 class FleetModel(models.Model):
-    id = models.CharField(max_length=256, primary_key=True,unique=True)
-    assetid = models.CharField(max_length=10 , unique=True , editable=False) # vehicle machinery number
-    assetName = models.CharField(max_length=256 , null=True , blank=True)   # vehicle machinery name 
-    numberPlate = models.CharField(max_length=256 , null=True , blank=True) # 
-    driverName = models.CharField(max_length=256 , null=True , blank=True) # driver name
-    
+    id = models.CharField(max_length=256, primary_key=True, unique=True)
+    # vehicle machinery number
+    asset_id = models.CharField(max_length=10, unique=True, editable=False)
+    asset_name = models.CharField(max_length=256, null=True, blank=True)   # vehicle machinery name
+    number_plate = models.CharField(max_length=256, null=True, blank=True, unique=True, editable=False)
+    driver_name = models.CharField(max_length=256, null=True, blank=True)  # driver name
+
     '''
     logs = {
-        'entry' : 'true/false',
-        'entry_time' : 'entry_time', 
-        'exit_time' : 'exit_time', 
-        'gate_number' : 'gate_number',
-        'camera_number' : 'camera_number',
-        'latitude' : 'latitude', 
-        'longitude' : 'longitude',
-        'updated_at' : 'updated_at',
-        'authorized' : 'true/false',
+        'in_unit': True,
+        'entry': [
+            {
+                'time': '',
+                'gate': '',
+                'camera': '',
+                'latitude': '',
+                'longitude': '',
+                'location': {
+                    "full_address" : "",
+                    "locality" : "",
+                    "pincode" : ""
+                }
+            }
+        ],
+        'exit': [
+            {
+                'time': '',
+                'gate': '',
+                'camera': '',
+                'latitude': '',
+                'longitude': '',
+                'location': {
+                    "full_address" : "",
+                    "locality" : "",
+                    "pincode" : ""
+                }
+            }
+        ],
+        'updated_at': 'updated_at',
+        'date': ''
     }
     '''
-    
-    logs = models.JSONField(default=dict , blank= True)
- 
-    created_at=models.DateTimeField(auto_now_add=True) 
+
+    logs = models.JSONField(default=dict, blank=True)
+    access = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
     def __str__(self):
-        return self.id + self.assetid
+        return self.id + self.asset_id
+
 
 ''' camera Model '''
-class Camera(models.Model):
-    id = models.CharField(max_length=256, primary_key=True,unique=True) 
-    number = models.CharField(max_length=50, null=True , blank=True) # camera number [ ENTRY1 , EXIT2]
-    latitude = models.CharField(max_length=50, null=True , blank=True) # latitude 
-    longitude = models.CharField(max_length=50, null=True , blank=True) # longitude
-    gate_number = models.CharField(max_length=50, null=True , blank=True) # gate number 
-    def __str__(self) :
-        return self.id + self.number
 
-class ActivityLog(models.Model):
-    id = models.CharField(max_length=256, primary_key=True,unique=True) 
-    activity = models.JSONField(default=dict , blank= True)
+
+class Camera(models.Model):
+    id = models.CharField(max_length=256, primary_key=True, unique=True)
+    number = models.CharField(max_length=50, null=True,blank=True, editable=False, unique=True)
+    latitude = models.CharField(max_length=50, null=True, blank=True)  # latitude
+    longitude = models.CharField( max_length=50, null=True, blank=True)  # longitude
+    gate_number = models.CharField(max_length=50, null=True, blank=True)  # gate number
+    entry = models.BooleanField(default=True)  # entry or exit
+    available = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.id + self.number

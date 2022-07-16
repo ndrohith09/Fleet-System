@@ -1,0 +1,30 @@
+-----------------------------
+Fleet Management System
+-----------------------------
+a)Vehicle Entry/Exit
+b)Vehicle Details
+
+-----
+
+1)Vehicle Entry(*)
+    - In log
+    - authorization check
+
+2)Vehicle Exit(*)
+    - In log
+    - authorization check
+
+3)Add Vehicle(*)
+    - adding single unit vehicle details
+    - block/access vehicle
+    - update vehicle details
+
+4)Add Camera(*)
+    - adding single unit camera details
+    - block/access camera
+    - update camera details
+
+5)Vehicle Details
+    - Enter a id/vh.no to get the all details of entry/exit
+
+6)Vehicle Data Visualization
