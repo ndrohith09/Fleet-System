@@ -27,7 +27,10 @@ dBY = "%d %B,%Y"
 #dtt.strptime(date.today(), '%Y-%m-%d').strftime(dmY)
 
 def number_plate_model(input_img):
-    img = cv2.imread(input_img)
+    jpg_original = input_img.read()
+    jpg_as_np = np.frombuffer(jpg_original, dtype=np.uint8)
+    img = cv2.imdecode(jpg_as_np, flags=1)
+    # img = cv2.imread(input_img)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     bfilter = cv2.bilateralFilter(gray, 11, 17, 17) #Noise reduction
@@ -379,13 +382,11 @@ class FleetEntryExit(APIView):
             --------------------------
             Process the model and then return then numberplates of the fleets
         """
-
         camera_number = request.data.get('camera_number', None)
         img = request.data.get('img', None)
 
         print(camera_number)
         print(img)
-        print("351")
 
         val_arr = [None, '']
 
@@ -397,10 +398,11 @@ class FleetEntryExit(APIView):
 
         '''Processing the image here'''
         # img = 'app/car.jpeg' # authorized
-        img = 'app/car1.jpeg'  # unauthorized
+        # img = 'app/car1.jpeg'  # unauthorized
+
         vh_plate = number_plate_model(img)
         print("==========================")
-        print(vh_plate)
+        print("The predicted number plate:",vh_plate)
         if vh_plate in val_arr:
             return Response({'msg': 'Model didnt process the image properly'}, status=status.HTTP_404_NOT_FOUND)
 
